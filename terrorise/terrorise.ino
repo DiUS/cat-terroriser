@@ -15,6 +15,7 @@ int state = looking_for_dark;
 int photocellPin = 0;     // the cell and 10K pulldown are connected to a0
 int photocellReading;     // the analog reading from the sensor divider
 int LEDpin = 22;
+int LEDpin2 = 23;
 boolean ledOn = false;
 
 void setup()
@@ -28,6 +29,7 @@ void setup()
   pinMode( channel_b_input_4, OUTPUT ); // Channel B input 4
 
   pinMode(LEDpin, OUTPUT);
+  pinMode(LEDpin2, OUTPUT);
   
   Serial.begin( 9600 );
   Serial.println("Starting up");
@@ -39,7 +41,7 @@ void loop()
   if(state == looking_for_dark) {
     toggleLed();
     if(isDark()) {
-      turnLedOff();
+      turnAllLedsOff();
       state = in_dark;
       stopWheels();  
     }
@@ -131,6 +133,7 @@ void turnLedOff() {
   Serial.println("Turning light off");
   ledOn = false;
   digitalWrite(LEDpin, LOW);  
+  digitalWrite(LEDpin2, HIGH); 
 }
 
 
@@ -138,6 +141,12 @@ void turnLedOn() {
   Serial.println("Turning light on");
   ledOn = true;
   digitalWrite(LEDpin, HIGH);
+  digitalWrite(LEDpin2, LOW);
+}
+
+void turnAllLedsOff() {
+  digitalWrite(LEDpin, LOW);
+  digitalWrite(LEDpin2, LOW);
 }
 
 
