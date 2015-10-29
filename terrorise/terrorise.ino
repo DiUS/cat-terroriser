@@ -14,9 +14,13 @@ int state = looking_for_dark;
 //photocell
 int photocellPin = 0;     // the cell and 10K pulldown are connected to a0
 int photocellReading;     // the analog reading from the sensor divider
+int photocellPin2 = 12;     // the cell and 10K pulldown are connected to a0
+int photocellReading2;     // the analog reading from the sensor divider
 int LEDpin = 22;
 int LEDpin2 = 23;
 boolean ledOn = false;
+
+int darkThreshold = 300;
 
 void setup()
 {
@@ -33,12 +37,13 @@ void setup()
   
   Serial.begin( 9600 );
   Serial.println("Starting up");
-  goForward();
+  headToDark();
 }
 
 void loop()
 {
   if(state == looking_for_dark) {
+    headToDark();
     toggleLed();
     if(isDark()) {
       turnAllLedsOff();
@@ -46,18 +51,19 @@ void loop()
       stopWheels();  
     }
   }
-  else if(state == looking_for_light && !isDark()) {
-    state = looking_for_dark;
-    stopWheels();
-    spin();
-    delay(1000);
-    goForward();
+  else if(state == looking_for_light) {
+    headToLight();
+    if(!isDark()) {
+      state = looking_for_dark;
+      stopWheels();
+      spin();
+      delay(1000);
+    }
   }
   else if(state == in_dark) {
     delay(3000);
-    goBackward();
+    headToLight();
     delay(3000);
-    goBackward();
     state = looking_for_light;
   }
   delay(1000);
@@ -66,7 +72,7 @@ void loop()
 void goForward()
 {
     Serial.println("Going forward");
-    setSpeed(100);
+    setSpeed(150);
     digitalWrite( channel_a_input_1, HIGH);
     digitalWrite( channel_a_input_2, LOW);
     digitalWrite( channel_b_input_3, LOW);
@@ -76,7 +82,7 @@ void goForward()
 void goBackward()
 {
     Serial.println("Going backward");
-    setSpeed(100);
+    setSpeed(150);
     digitalWrite( channel_a_input_1, LOW);
     digitalWrite( channel_a_input_2, HIGH);
     digitalWrite( channel_b_input_3, HIGH);
@@ -116,9 +122,8 @@ void setSpeed(int speed)
 
 boolean isDark() {
   photocellReading = analogRead(photocellPin);
-  Serial.print("Analog reading = ");
-  Serial.println(photocellReading);
-  return photocellReading < 400;
+  int backReading =  analogRead(photocellPin2);
+  return photocellReading < darkThreshold  || backReading < darkThreshold ;
 }
 
 void toggleLed() {
@@ -130,7 +135,6 @@ void toggleLed() {
 }
 
 void turnLedOff() {
-  Serial.println("Turning light off");
   ledOn = false;
   digitalWrite(LEDpin, LOW);  
   digitalWrite(LEDpin2, HIGH); 
@@ -138,7 +142,6 @@ void turnLedOff() {
 
 
 void turnLedOn() {
-  Serial.println("Turning light on");
   ledOn = true;
   digitalWrite(LEDpin, HIGH);
   digitalWrite(LEDpin2, LOW);
@@ -147,6 +150,34 @@ void turnLedOn() {
 void turnAllLedsOff() {
   digitalWrite(LEDpin, LOW);
   digitalWrite(LEDpin2, LOW);
+}
+
+
+void headToLight() {
+  int frontReading = analogRead(photocellPin) / 100;
+  int backReading =  analogRead(photocellPin2) / 100;
+  if(frontReading >= backReading) {
+    Serial.println("going forward");
+    goForward();
+  }
+  else {
+    Serial.println("going backward");
+    goBackward();
+  }
+}
+
+
+void headToDark() {
+  int frontReading = analogRead(photocellPin) / 100;
+  int backReading =  analogRead(photocellPin2) / 100;
+  if(frontReading <= backReading) {
+    Serial.println("going forward");
+    goForward();
+  }
+  else {
+    Serial.println("going backward");
+    goBackward();
+  }
 }
 
 
