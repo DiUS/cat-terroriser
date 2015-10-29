@@ -10,6 +10,7 @@ const int looking_for_light = 1;
 const int in_dark = 2;
 
 int state = looking_for_dark;
+int lastState = state;
 
 //photocell
 int photocellPin = 0;     // the cell and 10K pulldown are connected to a0
@@ -19,8 +20,11 @@ int photocellReading2;     // the analog reading from the sensor divider
 int LEDpin = 22;
 int LEDpin2 = 23;
 boolean ledOn = false;
+boolean spinRight = true;
 
-int darkThreshold = 300;
+int darkThreshold = 400;
+
+int loopsInState = 0;
 
 void setup()
 {
@@ -46,6 +50,7 @@ void loop()
     headToDark();
     toggleLed();
     if(isDark()) {
+      loopsInState = 0;
       turnAllLedsOff();
       state = in_dark;
       stopWheels();  
@@ -54,9 +59,9 @@ void loop()
   else if(state == looking_for_light) {
     headToLight();
     if(!isDark()) {
+      loopsInState = 0;
       state = looking_for_dark;
       stopWheels();
-      spin();
       delay(1000);
     }
   }
@@ -66,13 +71,24 @@ void loop()
     delay(3000);
     state = looking_for_light;
   }
+
+  if(lastState == state) {
+    loopsInState++;
+  } else {
+    loopsInState = 0;
+  }
+  lastState = state;
+  
+  if (loopsInState > 0 && loopsInState % 10 == 0) {
+    spin();
+  }
   delay(1000);
 }
 
 void goForward()
 {
     Serial.println("Going forward");
-    setSpeed(150);
+    setSpeed(100);
     digitalWrite( channel_a_input_1, HIGH);
     digitalWrite( channel_a_input_2, LOW);
     digitalWrite( channel_b_input_3, LOW);
@@ -82,21 +98,29 @@ void goForward()
 void goBackward()
 {
     Serial.println("Going backward");
-    setSpeed(150);
+    setSpeed(100);
     digitalWrite( channel_a_input_1, LOW);
     digitalWrite( channel_a_input_2, HIGH);
     digitalWrite( channel_b_input_3, HIGH);
-    digitalWrite( channel_b_input_4, LOW);    
-    
+    digitalWrite( channel_b_input_4, LOW);       
 }
 
 void spin() {
   Serial.println("Spinning...");
   setSpeed(150);
-  digitalWrite( channel_a_input_1, HIGH);
-  digitalWrite( channel_a_input_2, LOW);
-  digitalWrite( channel_b_input_3, HIGH);
-  digitalWrite( channel_b_input_4, LOW); 
+  if(spinRight) {
+    digitalWrite( channel_a_input_1, HIGH);
+    digitalWrite( channel_a_input_2, LOW);
+    digitalWrite( channel_b_input_3, HIGH);
+    digitalWrite( channel_b_input_4, LOW);  
+    spinRight = false; 
+  } else {
+    digitalWrite( channel_a_input_1, LOW);
+    digitalWrite( channel_a_input_2, HIGH);
+    digitalWrite( channel_b_input_3, LOW);
+    digitalWrite( channel_b_input_4, HIGH);  
+    spinRight = true;
+  }
 }
 
 void stopIn(int milliseconds) {
